@@ -1,6 +1,7 @@
 package cake.world.donutqueue.service;
 
 import cake.world.donutqueue.domain.Order;
+import cake.world.donutqueue.exceptions.NoOrdersInTheQueue;
 import cake.world.donutqueue.exceptions.OrderAlreadyExistsException;
 import cake.world.donutqueue.exceptions.OrderNotFoundException;
 import lombok.Getter;
@@ -14,15 +15,30 @@ public class OrderFactory {
     @Getter
     private static List<Order> ordersQueue = new ArrayList<>();
 
-    private static Order findOrderInTheQueue(short clientId) {
+    private static Order findOrderByClientId(short clientId) {
         return ordersQueue.stream()
                 .filter(order -> clientId == order.getClientId())
                 .findAny()
                 .orElse(null);
     }
 
+    public static Order getOrderByClientId(short clientId) {
+        Order order = findOrderByClientId(clientId);
+        if (order == null) {
+            throw new OrderNotFoundException();
+        }
+        return order;
+    }
+
+    public static Order getFirstOrder() {
+        if (ordersQueue.size() == 0) {
+            throw new NoOrdersInTheQueue();
+        }
+        return ordersQueue.get(0);
+    }
+
     public static void addOrder(Order order) {
-        if (findOrderInTheQueue(order.getClientId()) == null) {
+        if (findOrderByClientId(order.getClientId()) == null) {
             ordersQueue.add(order);
         } else {
             throw new OrderAlreadyExistsException();
@@ -30,7 +46,7 @@ public class OrderFactory {
     }
 
     public static void deleteOrder(short clientId) {
-        Order foundOrder = findOrderInTheQueue(clientId);
+        Order foundOrder = findOrderByClientId(clientId);
         if (foundOrder != null) {
             ordersQueue.remove(foundOrder);
         } else {

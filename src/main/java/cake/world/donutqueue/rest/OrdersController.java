@@ -20,14 +20,26 @@ public class OrdersController {
         OrderFactory.addOrder(order);
         return new ResponseEntity<>("Your order has been successfully placed!", OK);
     }
+
      // An endpoint for the client to check his queue position and approximate wait time.
+     @GetMapping("/orders/{clientId}")
+     public ResponseEntity<Order> getOrderByClientId(@PathVariable short clientId) {
+         return new ResponseEntity<>(OrderFactory.getOrderByClientId(clientId), OK);
+     }
+
     //  An endpoint which allows his manager to see all entries in the queue with the
     // approximate wait time
     @GetMapping("/orders")
     public ResponseEntity<List<Order>> getOrders() {
         return new ResponseEntity<>(OrderFactory.getOrdersQueue(), OK);
     }
+
     // An endpoint to retrieve his next delivery which should be placed in the cart
+    @GetMapping("/orders/next")
+    public ResponseEntity<Order> getNextOrder() {
+        return new ResponseEntity<>(OrderFactory.getFirstOrder(), OK);
+    }
+
     //  An endpoint to cancel an order
     @DeleteMapping("/orders")
     public ResponseEntity<String> deleteOrder(@RequestParam short clientId) {
