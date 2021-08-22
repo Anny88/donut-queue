@@ -12,36 +12,37 @@ import java.util.List;
 import static org.springframework.http.HttpStatus.OK;
 
 @RestController
+@RequestMapping(value = "/orders")
 public class OrdersController {
 
     // An endpoint for adding items to the queue
-    @PostMapping(path = "/orders")
+    @PostMapping
     public ResponseEntity<String> postOrder(@Valid @RequestBody Order order) {
         OrderFactory.addOrder(order);
         return new ResponseEntity<>("Your order has been successfully placed!", OK);
     }
 
      // An endpoint for the client to check his queue position and approximate wait time.
-     @GetMapping("/orders/{clientId}")
+     @GetMapping("/{clientId}")
      public ResponseEntity<Order> getOrderByClientId(@PathVariable short clientId) {
          return new ResponseEntity<>(OrderFactory.getOrderByClientId(clientId), OK);
      }
 
     //  An endpoint which allows his manager to see all entries in the queue with the
     // approximate wait time
-    @GetMapping("/orders")
+    @GetMapping
     public ResponseEntity<List<Order>> getOrders() {
         return new ResponseEntity<>(OrderFactory.getOrdersQueue(), OK);
     }
 
     // An endpoint to retrieve his next delivery which should be placed in the cart
-    @GetMapping("/orders/next")
+    @GetMapping("/next")
     public ResponseEntity<Order> getNextOrder() {
         return new ResponseEntity<>(OrderFactory.getFirstOrder(), OK);
     }
 
     //  An endpoint to cancel an order
-    @DeleteMapping("/orders")
+    @DeleteMapping
     public ResponseEntity<String> deleteOrder(@RequestParam short clientId) {
         OrderFactory.deleteOrder(clientId);
         return new ResponseEntity<>("Your order has been successfully deleted!", OK);
