@@ -1,5 +1,6 @@
 package cake.world.donutqueue.service;
 
+import cake.world.donutqueue.domain.Delivery;
 import cake.world.donutqueue.domain.Order;
 import cake.world.donutqueue.exceptions.NoOrdersInTheQueue;
 import cake.world.donutqueue.exceptions.OrderAlreadyExistsException;
@@ -7,17 +8,18 @@ import cake.world.donutqueue.exceptions.OrderNotFoundException;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 
 @Service
-public class OrdersService {
-    private static int MAX_PREMIUM_CLIENT_ID = 999;
+public class MainService {
+    private static final int MAX_PREMIUM_CLIENT_ID = 999;
+    private static final int MAX_ORDERS_IN_DELIVERY = 50;
 
     @Getter
     private static List<Order> orders = new ArrayList<>();
-
+    @Getter
+    private static List<Delivery> deliveries = new ArrayList<>();
 
     private static Order findOrderByClientId(short clientId) {
         return orders.stream()
@@ -34,11 +36,15 @@ public class OrdersService {
         return order;
     }
 
-    public static Order getFirstOrder() {
-        if (orders.size() == 0) {
+    public static Delivery retrieveFirstDelivery() {
+        if (deliveries.size() == 0) {
             throw new NoOrdersInTheQueue();
         }
-        return orders.get(0);
+        Delivery retrievedDelivery = deliveries.get(0);
+        deliveries.remove(0);
+        orders = orders.subList(retrievedDelivery.getOrders().size(), orders.size());
+        createDeliveriesFromOrders();
+        return retrievedDelivery;
     }
 
     public static void addOrder(Order order) {
@@ -54,14 +60,35 @@ public class OrdersService {
         } else {
             orders.add(order);
         }
+        createDeliveriesFromOrders();
     }
 
     public static void deleteOrder(short clientId) {
         Order foundOrder = findOrderByClientId(clientId);
-        if (foundOrder != null) {
-            orders.remove(foundOrder);
-        } else {
+        if (foundOrder == null) {
             throw new OrderNotFoundException();
         }
+        orders.remove(foundOrder);
+        createDeliveriesFromOrders();
+    }
+
+    private static void createDeliveriesFromOrders () {
+        deliveries = new ArrayList<>();
+        int deliveryIndex = 0;
+        int donutsSum = 0;
+        ArrayList<Order> ordersForDelivery = new ArrayList<>();
+        for (Order order : orders){
+            int quantity = order.getQuantity();
+            if((donutsSum + quantity) > MAX_ORDERS_IN_DELIVERY) {
+                deliveries.add(new Delivery(deliveryIndex, ordersForDelivery));
+                deliveryIndex ++;
+                donutsSum = quantity;
+                ordersForDelivery = new ArrayList<>(Collections.singletonList(order));
+            } else {
+                ordersForDelivery.add(order);
+                donutsSum += quantity;
+            }
+        }
+        deliveries.add(new Delivery(deliveryIndex, ordersForDelivery));
     }
 }
