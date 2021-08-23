@@ -10,15 +10,19 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+
 @Service
-public class OrderFactory {
+public class OrdersService {
+    private static int MAX_PREMIUM_CLIENT_ID = 999;
+
     @Getter
-    private static List<Order> ordersQueue = new ArrayList<>();
+    private static List<Order> orders = new ArrayList<>();
+
 
     private static Order findOrderByClientId(short clientId) {
-        return ordersQueue.stream()
+        return orders.stream()
                 .filter(order -> clientId == order.getClientId())
-                .findAny()
+                .findFirst()
                 .orElse(null);
     }
 
@@ -31,24 +35,31 @@ public class OrderFactory {
     }
 
     public static Order getFirstOrder() {
-        if (ordersQueue.size() == 0) {
+        if (orders.size() == 0) {
             throw new NoOrdersInTheQueue();
         }
-        return ordersQueue.get(0);
+        return orders.get(0);
     }
 
     public static void addOrder(Order order) {
-        if (findOrderByClientId(order.getClientId()) == null) {
-            ordersQueue.add(order);
-        } else {
+        if (findOrderByClientId(order.getClientId()) != null) {
             throw new OrderAlreadyExistsException();
+        }
+        if (order.getClientId() <= MAX_PREMIUM_CLIENT_ID) {
+            int premiumOrdersCount = (int) orders
+                    .stream()
+                    .filter((tmpOrder) -> tmpOrder.getClientId() <= MAX_PREMIUM_CLIENT_ID)
+                    .count();
+            orders.add(premiumOrdersCount, order);
+        } else {
+            orders.add(order);
         }
     }
 
     public static void deleteOrder(short clientId) {
         Order foundOrder = findOrderByClientId(clientId);
         if (foundOrder != null) {
-            ordersQueue.remove(foundOrder);
+            orders.remove(foundOrder);
         } else {
             throw new OrderNotFoundException();
         }
