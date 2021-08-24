@@ -1,5 +1,6 @@
 package cake.world.donutqueue.rest;
 
+import cake.world.donutqueue.domain.ClientResponse;
 import cake.world.donutqueue.domain.Order;
 import cake.world.donutqueue.service.MainService;
 import org.springframework.http.ResponseEntity;
@@ -24,14 +25,9 @@ public class OrdersController {
 
      // An endpoint for the client to check his queue position and approximate wait time.
      @GetMapping("/{clientId}")
-     public ResponseEntity<Order> getOrderByClientId(@PathVariable short clientId) {
-         return new ResponseEntity<>(MainService.getOrderByClientId(clientId), OK);
+     public ResponseEntity<ClientResponse> getOrderByClientId(@PathVariable short clientId) {
+         return new ResponseEntity<>(MainService.getClientResponseByClientId(clientId), OK);
      }
-
-    @GetMapping
-    public ResponseEntity<List<Order>> getOrders() {
-        return new ResponseEntity<>(MainService.getOrders(), OK);
-    }
 
     //  An endpoint to cancel an order
     @DeleteMapping

@@ -1,5 +1,6 @@
 package cake.world.donutqueue.service;
 
+import cake.world.donutqueue.domain.ClientResponse;
 import cake.world.donutqueue.domain.Delivery;
 import cake.world.donutqueue.domain.Order;
 import cake.world.donutqueue.exceptions.NoOrdersInTheQueue;
@@ -21,19 +22,35 @@ public class MainService {
     @Getter
     private static List<Delivery> deliveries = new ArrayList<>();
 
-    private static Order findOrderByClientId(short clientId) {
-        return orders.stream()
+    private static Order findOrderByClientId(short clientId, List<Order> ordersToSearch) {
+        return ordersToSearch.stream()
                 .filter(order -> clientId == order.getClientId())
                 .findFirst()
                 .orElse(null);
     }
 
     public static Order getOrderByClientId(short clientId) {
-        Order order = findOrderByClientId(clientId);
+        Order order = findOrderByClientId(clientId, orders);
         if (order == null) {
             throw new OrderNotFoundException();
         }
         return order;
+    }
+
+    public static ClientResponse getClientResponseByClientId(short clientId) {
+        Order clientOrder = findOrderByClientId(clientId, orders);
+        Delivery clientDelivery = deliveries.stream()
+                .filter(delivery -> findOrderByClientId(clientId, delivery.getOrders()) != null)
+                .findFirst()
+                .orElse(null);
+        if (clientOrder == null || clientDelivery == null) {
+            throw new OrderNotFoundException();
+        }
+        return ClientResponse
+                .builder()
+                .position(orders.indexOf(clientOrder) + 1)
+                .waitTimeInMinutes(clientDelivery.getWaitTimeInMinutes())
+                .build();
     }
 
     public static Delivery retrieveFirstDelivery() {
@@ -48,7 +65,7 @@ public class MainService {
     }
 
     public static void addOrder(Order order) {
-        if (findOrderByClientId(order.getClientId()) != null) {
+        if (findOrderByClientId(order.getClientId(), orders) != null) {
             throw new OrderAlreadyExistsException();
         }
         if (order.getClientId() <= MAX_PREMIUM_CLIENT_ID) {
@@ -64,7 +81,7 @@ public class MainService {
     }
 
     public static void deleteOrder(short clientId) {
-        Order foundOrder = findOrderByClientId(clientId);
+        Order foundOrder = findOrderByClientId(clientId, orders);
         if (foundOrder == null) {
             throw new OrderNotFoundException();
         }
